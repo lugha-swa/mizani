@@ -170,3 +170,17 @@ Neno mizani_na(Neno a, Neno b) {
 Neno mizani_au(Neno a, Neno b) {
     rudisha mizani_neno(a.p | b.p, a.n & b.n);
 }
+
+// Sogeza trits k chini (gawanya kwa 3^k). Kwa ternary iliyosawazishwa
+// kutupa trits za chini ndiko kukadiria kwa karibu zaidi -- hakuna
+// kanuni ya ziada ya kukadiria kama kwenye binary.
+Neno mizani_sogeza_kulia(Neno a, n32 k) {
+    rudisha mizani_neno(a.p >> k, a.n >> k);
+}
+
+// Thamani ya trits [mwanzo, mwanzo+urefu) kama namba kamili ya
+// iliyosawazishwa -- kwa kufungua sehemu za agizo.
+n64 mizani_sehemu(Neno a, n32 mwanzo, n32 urefu) {
+    n64 maski = (1 << urefu) - 1;
+    rudisha mizani_kwa_namba(mizani_neno((a.p >> mwanzo) & maski, (a.n >> mwanzo) & maski));
+}
