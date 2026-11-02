@@ -1,0 +1,189 @@
+// jaribio_mashine.swa -- programu halisi kwenye mashine pepe ya Mizani.
+// Msimbo wa kutoka = idadi ya makosa.
+husisha { msingi/maktaba/kumbukumbu.swa }
+husisha { msingi/mashine.swa }
+
+n32 makosa = 0;
+
+w0 tarajia(n64 halisi, n64 tarajiwa, n8* jina) {
+    kama (halisi != tarajiwa) {
+        makosa = makosa + 1;
+        andika("KOSA %s: %d badala ya %d\n", jina, halisi, tarajiwa);
+    }
+}
+
+// Agizo huwekwa kwenye kigeu kwanza: sret iliyopachikwa kama hoja
+// hutoa thamani mbaya kimya kwenye Swa v0.0.1 (lugha-swa/swa#324).
+w0 weka(n64 a, n64 op, n64 rd, n64 rs, n64 rt, n64 imm) {
+    Neno w = mashine_agizo(op, rd, rs, rt, imm);
+    mashine_weka_programu(a, w);
+}
+
+w0 weka_tawi(n64 a, n64 rd, n64 hasi, n64 sifuri, n64 chanya) {
+    Neno w = mashine_tawi(rd, hasi, sifuri, chanya);
+    mashine_weka_programu(a, w);
+}
+
+// n! kwa kitanzi: tawi la njia tatu hurudi juu wakati R1 > 0.
+w0 jaribio_factorial() {
+    mashine_anzisha();
+    weka(0, OP_WEKA, 1, 0, 0, 10);
+    weka(1, OP_WEKA, 2, 0, 0, 1);
+    weka(2, OP_ZIDISHA, 2, 2, 1, 0);
+    weka(3, OP_ONGEZAI, 1, 1, 0, -1);
+    weka_tawi(4, 1, 1, 1, -2);
+    weka(5, OP_SIMAMA, 0, 0, 0, 0);
+    tarajia(mashine_endesha(10000), 0, "factorial: kosa la mashine");
+    tarajia(mashine_thamani(2), 3628800, "10!");
+}
+
+// fib(30): R1, R2 = R2, R1 + R2 mara 30.
+w0 jaribio_fibonacci() {
+    mashine_anzisha();
+    weka(0, OP_WEKA, 1, 0, 0, 0);
+    weka(1, OP_WEKA, 2, 0, 0, 1);
+    weka(2, OP_WEKA, 3, 0, 0, 30);
+    weka(3, OP_ONGEZA, 4, 1, 2, 0);
+    weka(4, OP_ONGEZA, 1, 2, 0, 0);
+    weka(5, OP_ONGEZA, 2, 4, 0, 0);
+    weka(6, OP_ONGEZAI, 3, 3, 0, -1);
+    weka_tawi(7, 3, 1, 1, -4);
+    weka(8, OP_SIMAMA, 0, 0, 0, 0);
+    tarajia(mashine_endesha(10000), 0, "fibonacci: kosa la mashine");
+    tarajia(mashine_thamani(1), 832040, "fib(30)");
+}
+
+// Kumbukumbu: hifadhi 1..20 kwenye 100..119, kisha jumlisha kwa kupakia.
+// Programu imegawanywa kwa kazi mbili za kuijenga: kazi moja yenye wito
+// 15 wa weka() inagonga kikomo cha "vigezo vya ndani 64" cha Swa v0.0.1.
+w0 programu_ya_kuhifadhi() {
+    weka(0, OP_WEKA, 1, 0, 0, 1);       // R1 = thamani
+    weka(1, OP_WEKA, 2, 0, 0, 100);     // R2 = anwani
+    weka(2, OP_WEKA, 3, 0, 0, 20);      // R3 = idadi
+    weka(3, OP_HIFADHI, 1, 2, 0, 0);
+    weka(4, OP_ONGEZAI, 1, 1, 0, 1);
+    weka(5, OP_ONGEZAI, 2, 2, 0, 1);
+    weka(6, OP_ONGEZAI, 3, 3, 0, -1);
+    weka_tawi(7, 3, 1, 1, -4);
+}
+
+w0 programu_ya_kujumlisha() {
+    weka(8, OP_WEKA, 4, 0, 0, 0);       // R4 = jumla
+    weka(9, OP_WEKA, 2, 0, 0, 119);
+    weka(10, OP_PAKIA, -1, 2, 0, 0);
+    weka(11, OP_ONGEZA, 4, 4, -1, 0);
+    weka(12, OP_ONGEZAI, 2, 2, 0, -1);
+    weka(13, OP_ONGEZAI, -2, 2, 0, -99); // R-2 = anwani - 99
+    weka_tawi(14, -2, 1, 1, -4);
+    weka(15, OP_SIMAMA, 0, 0, 0, 0);
+}
+
+w0 jaribio_kumbukumbu() {
+    mashine_anzisha();
+    programu_ya_kuhifadhi();
+    programu_ya_kujumlisha();
+    tarajia(mashine_endesha(10000), 0, "kumbukumbu: kosa la mashine");
+    tarajia(mashine_thamani(4), 210, "jumla 1..20 kutoka kumbukumbu");
+}
+
+// ITA/RUDI: kazi ya mraba kwenye anwani 20, kiungo kwenye R-1.
+w0 jaribio_wito() {
+    mashine_anzisha();
+    weka(0, OP_WEKA, 1, 0, 0, -12);
+    weka(1, OP_ITA, -1, 0, 0, 20);
+    weka(2, OP_ONGEZAI, 3, 2, 0, 6);
+    weka(3, OP_SIMAMA, 0, 0, 0, 0);
+    weka(20, OP_ZIDISHA, 2, 1, 1, 0);
+    weka(21, OP_RUDI, -1, 0, 0, 0);
+    tarajia(mashine_endesha(100), 0, "wito: kosa la mashine");
+    tarajia(mashine_thamani(2), 144, "mraba(-12)");
+    tarajia(mashine_thamani(3), 150, "baada ya kurudi");
+}
+
+// Tawi la njia tatu: R3 = -1 / 0 / +1 kulingana na ishara ya R1.
+n64 tawi_kwa(n64 x) {
+    mashine_anzisha();
+    weka(0, OP_WEKA, 1, 0, 0, x);
+    weka_tawi(1, 1, 1, 3, 5);
+    weka(2, OP_WEKA, 3, 0, 0, -1);
+    weka(3, OP_SIMAMA, 0, 0, 0, 0);
+    weka(4, OP_WEKA, 3, 0, 0, 0);
+    weka(5, OP_SIMAMA, 0, 0, 0, 0);
+    weka(6, OP_WEKA, 3, 0, 0, 1);
+    weka(7, OP_SIMAMA, 0, 0, 0, 0);
+    mashine_endesha(100);
+    rudisha mashine_thamani(3);
+}
+
+w0 jaribio_tawi() {
+    tarajia(tawi_kwa(-5), -1, "tawi hasi");
+    tarajia(tawi_kwa(0), 0, "tawi sifuri");
+    tarajia(tawi_kwa(7), 1, "tawi chanya");
+    tarajia(tawi_kwa(-193710244), -1, "tawi hasi kubwa");
+}
+
+// Hasi, kusogeza na mantiki: -7 -> 7 -> 63 (x9) -> 21 (/3) -> sawa.
+w0 jaribio_sogeza_na_mantiki() {
+    mashine_anzisha();
+    weka(0, OP_WEKA, 1, 0, 0, -7);
+    weka(1, OP_KINYUME, 2, 1, 0, 0);
+    weka(2, OP_SOGEZA, 3, 2, 0, 2);
+    weka(3, OP_SOGEZA, 4, 3, 0, -1);
+    weka(4, OP_LINGANISHA, -3, 1, 2, 0);
+    weka(5, OP_ISHARA, -4, 1, 0, 0);
+    weka(6, OP_WEKA, 0, 0, 0, 99);      // R0 hubaki sifuri
+    weka(7, OP_SIMAMA, 0, 0, 0, 0);
+    tarajia(mashine_endesha(100), 0, "sogeza: kosa la mashine");
+    tarajia(mashine_thamani(2), 7, "kinyume(-7)");
+    tarajia(mashine_thamani(3), 63, "7 * 3^2");
+    tarajia(mashine_thamani(4), 21, "63 / 3");
+    tarajia(mashine_thamani(-3), -1, "linganisha(-7, 7)");
+    tarajia(mashine_thamani(-4), -1, "ishara(-7)");
+    tarajia(mashine_thamani(0), 0, "R0 daima sifuri");
+}
+
+// Usimbaji: kila sehemu ya agizo inarudi ilivyo, kwa mipaka yote.
+w0 jaribio_usimbaji() {
+    n64 op = -13;
+    wakati (op <= 13) {
+        n64 r = -4;
+        wakati (r <= 4) {
+            Neno w = mashine_agizo(op, r, 0 - r, r, 193710244 * r / 4);
+            tarajia(mizani_sehemu(w, 0, 3), op, "op");
+            tarajia(mizani_sehemu(w, 3, 2), r, "rd");
+            tarajia(mizani_sehemu(w, 5, 2), 0 - r, "rs");
+            tarajia(mizani_sehemu(w, 7, 2), r, "rt");
+            tarajia(mizani_sehemu(w, 9, 18), 193710244 * r / 4, "imm");
+            r = r + 1;
+        }
+        op = op + 1;
+    }
+}
+
+// Makosa: anwani nje ya kumbukumbu, opcode isiyojulikana, kitanzi kisichoisha.
+w0 jaribio_makosa() {
+    mashine_anzisha();
+    weka(0, OP_PAKIA, 1, 0, 0, 729);
+    tarajia(mashine_endesha(100), 1, "anwani nje");
+    mashine_anzisha();
+    Neno mbaya = mizani_kutoka(-13);
+    mashine_weka_programu(0, mbaya);
+    tarajia(mashine_endesha(100), 2, "opcode haijulikani");
+    mashine_anzisha();
+    weka(0, OP_RUKA, 0, 0, 0, 0);
+    tarajia(mashine_endesha(1000), 3, "kitanzi kisichoisha");
+}
+
+n32 main() {
+    jaribio_factorial();
+    jaribio_fibonacci();
+    jaribio_kumbukumbu();
+    jaribio_wito();
+    jaribio_tawi();
+    jaribio_sogeza_na_mantiki();
+    jaribio_usimbaji();
+    jaribio_makosa();
+    andika("mashine: makosa %d\n", makosa);
+    kama (makosa > 255) { rudisha 255; }
+    rudisha makosa;
+}

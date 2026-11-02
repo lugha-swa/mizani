@@ -31,17 +31,31 @@ Neno b = mizani_kutoka(5);
 n64 c = mizani_kwa_namba(mizani_zidisha(a, b));   // -35
 ```
 
+## Awamu 2: mashine pepe
+
+`msingi/mashine.swa`: rejista 9 (R-4 .. R4, R0 ni sifuri daima), kumbukumbu ya maneno 729 (3^6), na agizo la neno moja la trits 27:
+
+| trits | 0-2 | 3-4 | 5-6 | 7-8 | 9-26 |
+|---|---|---|---|---|---|
+| sehemu | opcode (-13..13) | rd | rs | rt | imm (+-193,710,244) |
+
+Maagizo 19: `SIMAMA`, `WEKA`, `ONGEZA`, `TOA`, `ZIDISHA`, `KINYUME`, `NA`, `AU`, `SOGEZA` (x3^k au /3^k), `PAKIA`, `HIFADHI`, `RUKA`, `ONGEZAI`, `LINGANISHA`, `ITA`, `RUDI`, `CHAPA`, `ISHARA`, na **`TAWI`** -- tawi la njia tatu: `imm` hugawanywa kuwa sehemu tatu za trits 6, na mashine huruka kwa mojawapo kulingana na kama `rd` ni hasi, sifuri au chanya. Kwenye binary hilo ni ulinganisho mmoja na matawi mawili; kwenye ternary ni agizo moja.
+
+`mtihani/jaribio_mashine.swa` huendesha programu halisi kwenye mashine: 10! = 3,628,800, fib(30) = 832,040, jumla kutoka kumbukumbu, ITA/RUDI, tawi kwa kila ishara, kusogeza na mantiki, usimbaji wa kila sehemu kwa mipaka yote, na makosa (anwani nje, opcode isiyojulikana, kitanzi kisichoisha).
+
 ## Majaribio
 
 ```sh
-SWA=/njia/ya/swa ./jaribu.sh
+swa --exe jaribu.swa > jaribu && chmod +x jaribu
+./jaribu /njia/kamili/ya/swa
 ```
+
+Mkimbiaji (`jaribu.swa`) ni Swa pia: hukusanya kila jaribio, huliendesha chini ya kikomo cha muda kwa `fork`/`execve`/`wait4`, na hukagua msimbo wa kutoka. Mizani yote -- maktaba, mashine, majaribio na mkimbiaji -- ni Swa safi.
 
 `mtihani/jaribio_hesabu.swa` hulinganisha kila operesheni na hesabu ya kawaida ya namba kamili: ubadilishaji wa kila namba katika [-3000, 3000] na mipaka yenyewe, gridi kamili ya jumla/tofauti/ulinganisho [-60, 60]², jozi 20,000 za nasibu katika neno zima (pamoja na kuzunguka), zidisha kwenye gridi na jozi 5,000 hadi 10^9, na mantiki ya Kleene trit kwa trit -- **ukaguzi 283,489**. CI inatumia Swa iliyotolewa ([v0.0.1](https://github.com/lugha-swa/swa/releases/tag/v0.0.1)), si ya kujengwa.
 
 ## Inayofuata
 
-2. Mashine pepe: rejista, kumbukumbu ya trytes (trits 9), maagizo ~20, tawi la njia tatu
 3. Assembler kwa Swa
 4. Kivinjari (WASM): Mizani mtandaoni
 5. `swa --mizani`: Swa ikikusanya kwenda ternary

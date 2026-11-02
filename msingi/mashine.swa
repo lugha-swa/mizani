@@ -1,0 +1,180 @@
+// mashine.swa -- Mizani: mashine pepe ya ternary iliyosawazishwa.
+//
+// Rejista 9, R-4 .. R4 (trits 2), kila moja neno la trits 27; R0 ni
+// sifuri daima. Kumbukumbu: maneno 729 (3^6), anwani 0..728. Agizo ni
+// neno MOJA la trits 27:
+//
+//   trits 0-2   opcode (-13..13)
+//   trits 3-4   rd     (-4..4)
+//   trits 5-6   rs
+//   trits 7-8   rt
+//   trits 9-26  imm    (trits 18: +-193,710,244)
+//
+// TAWI hugawa imm kuwa sehemu tatu za trits 6 (-364..364): ruka
+// kulingana na ishara ya rd -- hasi / sifuri / chanya -- kwa agizo moja.
+// Hiyo ndiyo nguvu ya asili ya ternary: ulinganisho una matokeo matatu.
+husisha { msingi/mizani.swa }
+
+n32 OP_SIMAMA = 0;      // simama
+n32 OP_WEKA = 1;        // rd = imm
+n32 OP_ONGEZA = 2;      // rd = rs + rt
+n32 OP_TOA = 3;         // rd = rs - rt
+n32 OP_ZIDISHA = 4;     // rd = rs * rt
+n32 OP_KINYUME = 5;     // rd = -rs (pia NOT ya ternary)
+n32 OP_NA = 6;          // rd = min(rs, rt) kwa kila trit
+n32 OP_AU = 7;          // rd = max(rs, rt) kwa kila trit
+n32 OP_SOGEZA = 8;      // rd = rs * 3^imm (imm < 0: gawanya)
+n32 OP_PAKIA = 9;       // rd = kumbukumbu[rs + imm]
+n32 OP_HIFADHI = 10;    // kumbukumbu[rs + imm] = rd
+n32 OP_RUKA = 11;       // pc = imm
+n32 OP_TAWI = 12;       // pc += sehemu ya imm kulingana na ishara ya rd
+n32 OP_ONGEZAI = 13;    // rd = rs + imm
+n32 OP_LINGANISHA = -1; // rd = -1 / 0 / +1
+n32 OP_ITA = -2;        // rd = pc + 1; pc = imm
+n32 OP_RUDI = -3;       // pc = rd
+n32 OP_CHAPA = -4;      // andika rd
+n32 OP_ISHARA = -5;     // rd = ishara(rs)
+
+n32 MASHINE_KUMBUKUMBU = 729;
+
+Neno mashine_rejista[9];
+Neno mashine_kumbukumbu[729];
+n64 mashine_pc = 0;
+n64 mashine_hatua = 0;
+n32 mashine_imesimama = 0;
+n32 mashine_kosa = 0;   // 0 sawa, 1 anwani nje, 2 opcode haijulikani, 3 hatua nyingi mno
+
+w0 mashine_anzisha() {
+    n32 i = 0;
+    wakati (i < 9) { mashine_rejista[i] = mizani_sifuri(); i = i + 1; }
+    i = 0;
+    wakati (i < MASHINE_KUMBUKUMBU) { mashine_kumbukumbu[i] = mizani_sifuri(); i = i + 1; }
+    mashine_pc = 0;
+    mashine_hatua = 0;
+    mashine_imesimama = 0;
+    mashine_kosa = 0;
+}
+
+Neno mashine_soma(n64 r) {
+    rudisha mashine_rejista[r + 4];
+}
+
+w0 mashine_andika(n64 r, Neno v) {
+    kama (r != 0) { mashine_rejista[r + 4] = v; }
+}
+
+n64 mashine_thamani(n64 r) {
+    rudisha mizani_kwa_namba(mashine_soma(r));
+}
+
+// Tengeneza agizo: kila sehemu ni namba iliyosawazishwa ndani ya upana
+// wake, hivyo neno ni op + rd*3^3 + rs*3^5 + rt*3^7 + imm*3^9.
+Neno mashine_agizo(n64 op, n64 rd, n64 rs, n64 rt, n64 imm) {
+    rudisha mizani_kutoka(op + rd * 27 + rs * 243 + rt * 2187 + imm * 19683);
+}
+
+Neno mashine_tawi(n64 rd, n64 hasi, n64 sifuri, n64 chanya) {
+    rudisha mashine_agizo(OP_TAWI, rd, 0, 0, hasi + sifuri * 729 + chanya * 531441);
+}
+
+w0 mashine_weka_programu(n64 anwani, Neno agizo) {
+    mashine_kumbukumbu[anwani] = agizo;
+}
+
+n32 mashine_anwani_sawa(n64 a) {
+    kama (a < 0 || a >= MASHINE_KUMBUKUMBU) {
+        mashine_kosa = 1;
+        mashine_imesimama = 1;
+        rudisha 0;
+    }
+    rudisha 1;
+}
+
+// Hesabu na mantiki: rd = f(rs, rt, imm). Hurudisha 1 ikiwa op ni yake.
+// Kila matokeo ya muundo huwekwa kwanza kwenye kigeu `v` kabla ya
+// kupitishwa: sret iliyopachikwa kama hoja moja kwa moja hutoa thamani
+// mbaya kimya kwenye Swa v0.0.1 (lugha-swa/swa#324).
+n32 mashine_hesabu(n64 op, n64 rd, n64 rs, n64 rt, n64 imm) {
+    kama (op == OP_WEKA) { Neno v = mizani_kutoka(imm); mashine_andika(rd, v); rudisha 1; }
+    kama (op == OP_ONGEZA) { Neno v = mizani_ongeza(mashine_soma(rs), mashine_soma(rt)); mashine_andika(rd, v); rudisha 1; }
+    kama (op == OP_TOA) { Neno v = mizani_toa(mashine_soma(rs), mashine_soma(rt)); mashine_andika(rd, v); rudisha 1; }
+    kama (op == OP_ZIDISHA) { Neno v = mizani_zidisha(mashine_soma(rs), mashine_soma(rt)); mashine_andika(rd, v); rudisha 1; }
+    kama (op == OP_KINYUME) { Neno v = mizani_kinyume(mashine_soma(rs)); mashine_andika(rd, v); rudisha 1; }
+    kama (op == OP_NA) { Neno v = mizani_na(mashine_soma(rs), mashine_soma(rt)); mashine_andika(rd, v); rudisha 1; }
+    kama (op == OP_AU) { Neno v = mizani_au(mashine_soma(rs), mashine_soma(rt)); mashine_andika(rd, v); rudisha 1; }
+    kama (op == OP_ONGEZAI) { Neno v = mizani_ongeza(mashine_soma(rs), mizani_kutoka(imm)); mashine_andika(rd, v); rudisha 1; }
+    rudisha 0;
+}
+
+n32 mashine_hesabu_nyingine(n64 op, n64 rd, n64 rs, n64 rt, n64 imm) {
+    kama (op == OP_SOGEZA) {
+        kama (imm >= 0) { Neno v = mizani_sogeza(mashine_soma(rs), imm); mashine_andika(rd, v); }
+        sivyo { Neno v = mizani_sogeza_kulia(mashine_soma(rs), 0 - imm); mashine_andika(rd, v); }
+        rudisha 1;
+    }
+    kama (op == OP_LINGANISHA) { Neno v = mizani_kutoka(mizani_linganisha(mashine_soma(rs), mashine_soma(rt))); mashine_andika(rd, v); rudisha 1; }
+    kama (op == OP_ISHARA) { Neno v = mizani_kutoka(mizani_ishara(mashine_soma(rs))); mashine_andika(rd, v); rudisha 1; }
+    kama (op == OP_CHAPA) { andika("%d\n", mashine_thamani(rd)); rudisha 1; }
+    rudisha 0;
+}
+
+// Kumbukumbu: PAKIA / HIFADHI. Hurudisha 1 ikiwa op ni yake.
+n32 mashine_kumbukumbu_op(n64 op, n64 rd, n64 rs, n64 imm) {
+    n64 a = mashine_thamani(rs) + imm;
+    kama (op == OP_PAKIA) {
+        kama (mashine_anwani_sawa(a)) { mashine_andika(rd, mashine_kumbukumbu[a]); }
+        rudisha 1;
+    }
+    kama (op == OP_HIFADHI) {
+        kama (mashine_anwani_sawa(a)) { mashine_kumbukumbu[a] = mashine_soma(rd); }
+        rudisha 1;
+    }
+    rudisha 0;
+}
+
+// Udhibiti: hurudisha pc ijayo.
+n64 mashine_udhibiti(Neno w, n64 op, n64 rd, n64 imm, n64 ijayo) {
+    kama (op == OP_RUKA) { rudisha imm; }
+    kama (op == OP_TAWI) {
+        n32 s = mizani_ishara(mashine_soma(rd));
+        kama (s < 0) { rudisha mashine_pc + mizani_sehemu(w, 9, 6); }
+        kama (s == 0) { rudisha mashine_pc + mizani_sehemu(w, 15, 6); }
+        rudisha mashine_pc + mizani_sehemu(w, 21, 6);
+    }
+    kama (op == OP_ITA) { Neno v = mizani_kutoka(ijayo); mashine_andika(rd, v); rudisha imm; }
+    kama (op == OP_RUDI) { rudisha mashine_thamani(rd); }
+    rudisha ijayo;
+}
+
+w0 mashine_hatua_moja() {
+    kama (mashine_anwani_sawa(mashine_pc) == 0) { rudisha; }
+    Neno w = mashine_kumbukumbu[mashine_pc];
+    n64 op = mizani_sehemu(w, 0, 3);
+    n64 rd = mizani_sehemu(w, 3, 2);
+    n64 rs = mizani_sehemu(w, 5, 2);
+    n64 rt = mizani_sehemu(w, 7, 2);
+    n64 imm = mizani_sehemu(w, 9, 18);
+    mashine_hatua = mashine_hatua + 1;
+    kama (op == OP_SIMAMA) { mashine_imesimama = 1; rudisha; }
+    kama (op > 13 || op < -5) { mashine_kosa = 2; mashine_imesimama = 1; rudisha; }
+    kama (mashine_hesabu(op, rd, rs, rt, imm) == 0) {
+        kama (mashine_hesabu_nyingine(op, rd, rs, rt, imm) == 0) {
+            mashine_kumbukumbu_op(op, rd, rs, imm);
+        }
+    }
+    kama (mashine_imesimama) { rudisha; }
+    mashine_pc = mashine_udhibiti(w, op, rd, imm, mashine_pc + 1);
+}
+
+// Endesha hadi SIMAMA, kosa, au hatua `kikomo`. Hurudisha mashine_kosa.
+n32 mashine_endesha(n64 kikomo) {
+    wakati (mashine_imesimama == 0) {
+        kama (mashine_hatua >= kikomo) {
+            mashine_kosa = 3;
+            mashine_imesimama = 1;
+        } sivyo {
+            mashine_hatua_moja();
+        }
+    }
+    rudisha mashine_kosa;
+}
