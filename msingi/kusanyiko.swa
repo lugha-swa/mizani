@@ -1,0 +1,279 @@
+// kusanyiko.swa -- lugha ya kusanyiko (assembly) ya Mizani, kwa Kiswahili.
+//
+//   ; maoni hadi mwisho wa mstari
+//   lebo:   AGIZO  hoja, hoja, ...
+//
+// Rejista: R-4 .. R4 (R0 ni sifuri daima). Namba: desimali, hasi
+// zinaruhusiwa. Lebo zinaweza kutumika kabla ya kufafanuliwa: pitio la
+// kwanza hurekodi anwani za lebo, la pili husimba maagizo.
+//
+//   SIMAMA                        WEKA    rd, namba|lebo
+//   ONGEZA/TOA/ZIDISHA rd, rs, rt NA/AU/LINGANISHA rd, rs, rt
+//   KINYUME/ISHARA rd, rs         ONGEZAI/SOGEZA rd, rs, namba
+//   PAKIA   rd, rs, namba|lebo    HIFADHI rd, rs, namba|lebo
+//   RUKA    lebo|namba            ITA     rd, lebo|namba
+//   RUDI    rd                    CHAPA   rd
+//   TAWI    rd, hasi, sifuri, chanya   -- lebo tatu, kwa ishara ya rd
+//   NENO    namba|lebo            -- neno la data
+husisha { msingi/mashine.swa }
+
+n32 KUS_MAX_LEBO = 512;
+n32 KUS_UREFU_JINA = 32;
+n8 kus_lebo_jina[16384];
+n64 kus_lebo_anwani[512];
+n32 kus_lebo_idadi = 0;
+n32 kus_makosa = 0;
+n32 kus_mstari = 0;
+n64 kus_anwani = 0;
+n32 kus_pitio = 0;
+
+// Tokeni za mstari mmoja: hadi 8, kila moja hadi herufi 63.
+n8 kus_tok[512];
+n32 kus_tok_idadi = 0;
+
+n8* kus_tokeni(n32 i) {
+    rudisha &kus_tok[i * 64];
+}
+
+w0 kus_kosa(n8* ujumbe, n8* kitu) {
+    kama (kus_pitio == 2 || kus_pitio == 1) {
+        andika("kosa, mstari %d: %s '%s'\n", kus_mstari, ujumbe, kitu);
+    }
+    kus_makosa = kus_makosa + 1;
+}
+
+n32 kus_ni_nafasi(n8 c) {
+    rudisha c == 32 || c == 9 || c == 13 || c == 44;   // nafasi, tab, CR, koma
+}
+
+// Gawa mstari (mwanzo..mwisho) kuwa tokeni; maoni (;) yanaachwa.
+w0 kus_gawa(n8* s, n64 mwanzo, n64 mwisho) {
+    kus_tok_idadi = 0;
+    n64 i = mwanzo;
+    wakati (i < mwisho) {
+        n8 c = s[i];
+        kama (c == 59) { rudisha; }                    // ';'
+        kama (kus_ni_nafasi(c)) {
+            i = i + 1;
+        } sivyo {
+            kama (kus_tok_idadi >= 8) {
+                kus_kosa("hoja nyingi mno kwenye mstari", "");
+                rudisha;
+            }
+            n8* t = kus_tokeni(kus_tok_idadi);
+            n32 k = 0;
+            wakati (i < mwisho && s[i] != 59 && kus_ni_nafasi(s[i]) == 0) {
+                kama (k < 63) { t[k] = s[i]; k = k + 1; }
+                i = i + 1;
+            }
+            t[k] = 0;
+            kus_tok_idadi = kus_tok_idadi + 1;
+        }
+    }
+}
+
+n32 kus_sawa(n8* a, n8* b) {
+    rudisha linganisha_mfuatano(a, b) == 0;
+}
+
+// Namba ya desimali (hiari '-'). Hurudisha 1 ikiwa ni namba.
+n32 kus_namba(n8* t, n64* nje) {
+    n32 i = 0;
+    n64 ishara = 1;
+    kama (t[0] == 45) { ishara = -1; i = 1; }
+    kama (t[i] == 0) { rudisha 0; }
+    n64 v = 0;
+    wakati (t[i] != 0) {
+        kama (t[i] < 48 || t[i] > 57) { rudisha 0; }
+        v = v * 10 + (t[i] - 48);
+        i = i + 1;
+    }
+    *nje = v * ishara;
+    rudisha 1;
+}
+
+// Rejista: R-4..R4 (au r). Hurudisha 1 ikiwa sahihi.
+n32 kus_rejista(n8* t, n64* nje) {
+    kama (t[0] != 82 && t[0] != 114) { rudisha 0; }
+    n64 v = 0;
+    kama (kus_namba(t + 1, &v) == 0) { rudisha 0; }
+    kama (v < -4 || v > 4) { rudisha 0; }
+    *nje = v;
+    rudisha 1;
+}
+
+n32 kus_tafuta_lebo(n8* jina) {
+    n32 i = 0;
+    wakati (i < kus_lebo_idadi) {
+        kama (kus_sawa(&kus_lebo_jina[i * KUS_UREFU_JINA], jina)) { rudisha i; }
+        i = i + 1;
+    }
+    rudisha -1;
+}
+
+w0 kus_ongeza_lebo(n8* jina, n64 anwani) {
+    kama (kus_tafuta_lebo(jina) >= 0) { kus_kosa("lebo imeshafafanuliwa", jina); rudisha; }
+    kama (kus_lebo_idadi >= KUS_MAX_LEBO) { kus_kosa("lebo nyingi mno", jina); rudisha; }
+    kama (urefu_wa_mfuatano(jina) >= KUS_UREFU_JINA) { kus_kosa("jina la lebo ni refu mno", jina); rudisha; }
+    nakili_mfuatano(&kus_lebo_jina[kus_lebo_idadi * KUS_UREFU_JINA], jina);
+    kus_lebo_anwani[kus_lebo_idadi] = anwani;
+    kus_lebo_idadi = kus_lebo_idadi + 1;
+}
+
+// Hoja ya rejista ya tokeni i.
+n64 kus_hoja_rejista(n32 i) {
+    n64 r = 0;
+    kama (kus_rejista(kus_tokeni(i), &r) == 0) { kus_kosa("rejista si sahihi (R-4..R4)", kus_tokeni(i)); }
+    rudisha r;
+}
+
+// Hoja ya namba au lebo ya tokeni i (pitio la kwanza: lebo = 0).
+n64 kus_hoja_thamani(n32 i) {
+    n64 v = 0;
+    kama (kus_namba(kus_tokeni(i), &v)) { rudisha v; }
+    kama (kus_pitio == 1) { rudisha 0; }
+    n32 l = kus_tafuta_lebo(kus_tokeni(i));
+    kama (l < 0) { kus_kosa("lebo haijulikani", kus_tokeni(i)); rudisha 0; }
+    rudisha kus_lebo_anwani[l];
+}
+
+// Umbali wa tawi kutoka agizo hili hadi lebo; lazima utoshe trits 6.
+n64 kus_umbali(n32 i) {
+    n64 lengo = kus_hoja_thamani(i);
+    kama (kus_pitio == 1) { rudisha 0; }
+    n64 d = lengo - kus_anwani;
+    kama (d < -364 || d > 364) { kus_kosa("tawi liko mbali mno (zaidi ya 364)", kus_tokeni(i)); }
+    rudisha d;
+}
+
+// Idadi ya hoja lazima ilingane; vinginevyo agizo linarukwa kabisa
+// (kusoma hoja zisizopo kungechukua tokeni za mstari uliopita).
+n32 kus_tarajia_hoja(n32 idadi, n8* agizo) {
+    kama (kus_tok_idadi - 1 != idadi) {
+        kus_kosa("idadi ya hoja si sahihi kwa", agizo);
+        rudisha 0;
+    }
+    rudisha 1;
+}
+
+w0 kus_andika(n64 op, n64 rd, n64 rs, n64 rt, n64 imm) {
+    kama (kus_pitio != 2) { rudisha; }
+    kama (imm < -193710244 || imm > 193710244) { kus_kosa("namba haitoshi trits 18", kus_tokeni(kus_tok_idadi - 1)); rudisha; }
+    Neno w = mashine_agizo(op, rd, rs, rt, imm);
+    mashine_weka_programu(kus_anwani, w);
+}
+
+// Agizo moja (tokeni zimeshagawanywa, lebo imeshaondolewa).
+w0 kus_agizo() {
+    n8* a = kus_tokeni(0);
+    kama (kus_anwani >= MASHINE_KUMBUKUMBU) { kus_kosa("programu ni kubwa kuliko kumbukumbu (729)", a); rudisha; }
+    kama (kus_sawa(a, "SIMAMA")) { kama (kus_tarajia_hoja(0, a) == 0) { rudisha; } kus_andika(OP_SIMAMA, 0, 0, 0, 0); rudisha; }
+    kama (kus_sawa(a, "WEKA")) { kama (kus_tarajia_hoja(2, a) == 0) { rudisha; } kus_andika(OP_WEKA, kus_hoja_rejista(1), 0, 0, kus_hoja_thamani(2)); rudisha; }
+    kama (kus_sawa(a, "ONGEZA") || kus_sawa(a, "TOA") || kus_sawa(a, "ZIDISHA") || kus_sawa(a, "NA") || kus_sawa(a, "AU") || kus_sawa(a, "LINGANISHA")) {
+        n64 op = OP_ONGEZA;
+        kama (kus_sawa(a, "TOA")) { op = OP_TOA; }
+        kama (kus_sawa(a, "ZIDISHA")) { op = OP_ZIDISHA; }
+        kama (kus_sawa(a, "NA")) { op = OP_NA; }
+        kama (kus_sawa(a, "AU")) { op = OP_AU; }
+        kama (kus_sawa(a, "LINGANISHA")) { op = OP_LINGANISHA; }
+        kama (kus_tarajia_hoja(3, a) == 0) { rudisha; }
+        kus_andika(op, kus_hoja_rejista(1), kus_hoja_rejista(2), kus_hoja_rejista(3), 0);
+        rudisha;
+    }
+    kama (kus_sawa(a, "KINYUME") || kus_sawa(a, "ISHARA")) {
+        n64 op2 = OP_KINYUME;
+        kama (kus_sawa(a, "ISHARA")) { op2 = OP_ISHARA; }
+        kama (kus_tarajia_hoja(2, a) == 0) { rudisha; }
+        kus_andika(op2, kus_hoja_rejista(1), kus_hoja_rejista(2), 0, 0);
+        rudisha;
+    }
+    kama (kus_sawa(a, "ONGEZAI") || kus_sawa(a, "SOGEZA") || kus_sawa(a, "PAKIA") || kus_sawa(a, "HIFADHI")) {
+        n64 op3 = OP_ONGEZAI;
+        kama (kus_sawa(a, "SOGEZA")) { op3 = OP_SOGEZA; }
+        kama (kus_sawa(a, "PAKIA")) { op3 = OP_PAKIA; }
+        kama (kus_sawa(a, "HIFADHI")) { op3 = OP_HIFADHI; }
+        kama (kus_tarajia_hoja(3, a) == 0) { rudisha; }
+        kus_andika(op3, kus_hoja_rejista(1), kus_hoja_rejista(2), 0, kus_hoja_thamani(3));
+        rudisha;
+    }
+    kama (kus_sawa(a, "RUKA")) { kama (kus_tarajia_hoja(1, a) == 0) { rudisha; } kus_andika(OP_RUKA, 0, 0, 0, kus_hoja_thamani(1)); rudisha; }
+    kama (kus_sawa(a, "ITA")) { kama (kus_tarajia_hoja(2, a) == 0) { rudisha; } kus_andika(OP_ITA, kus_hoja_rejista(1), 0, 0, kus_hoja_thamani(2)); rudisha; }
+    kama (kus_sawa(a, "RUDI")) { kama (kus_tarajia_hoja(1, a) == 0) { rudisha; } kus_andika(OP_RUDI, kus_hoja_rejista(1), 0, 0, 0); rudisha; }
+    kama (kus_sawa(a, "CHAPA")) { kama (kus_tarajia_hoja(1, a) == 0) { rudisha; } kus_andika(OP_CHAPA, kus_hoja_rejista(1), 0, 0, 0); rudisha; }
+    kama (kus_sawa(a, "TAWI")) {
+        kama (kus_tarajia_hoja(4, a) == 0) { rudisha; }
+        n32 kabla = kus_makosa;
+        n64 rd = kus_hoja_rejista(1);
+        n64 h = kus_umbali(2);
+        n64 z = kus_umbali(3);
+        n64 c = kus_umbali(4);
+        kama (kus_makosa > kabla) { rudisha; }   // kosa moja kwa tatizo moja
+        kus_andika(OP_TAWI, rd, 0, 0, h + z * 729 + c * 531441);
+        rudisha;
+    }
+    kama (kus_sawa(a, "NENO")) {
+        kama (kus_tarajia_hoja(1, a) == 0) { rudisha; }
+        kama (kus_pitio == 2) {
+            Neno d = mizani_kutoka(kus_hoja_thamani(1));
+            mashine_weka_programu(kus_anwani, d);
+        }
+        rudisha;
+    }
+    kus_kosa("agizo halijulikani", a);
+}
+
+w0 kus_pitia(n8* s, n64 urefu, n32 pitio) {
+    kus_pitio = pitio;
+    kus_anwani = 0;
+    kus_mstari = 0;
+    n64 i = 0;
+    wakati (i < urefu) {
+        n64 mwisho = i;
+        wakati (mwisho < urefu && s[mwisho] != 10) { mwisho = mwisho + 1; }
+        kus_mstari = kus_mstari + 1;
+        kus_gawa(s, i, mwisho);
+        kama (kus_tok_idadi > 0) {
+            // Lebo: tokeni ya kwanza inaisha kwa ':'
+            n8* t0 = kus_tokeni(0);
+            n64 ur = urefu_wa_mfuatano(t0);
+            kama (ur > 0 && t0[ur - 1] == 58) {
+                t0[ur - 1] = 0;
+                kama (pitio == 1) { kus_ongeza_lebo(t0, kus_anwani); }
+                // sogeza tokeni nyingine juu
+                n32 k = 1;
+                wakati (k < kus_tok_idadi) {
+                    nakili_mfuatano(kus_tokeni(k - 1), kus_tokeni(k));
+                    k = k + 1;
+                }
+                kus_tok_idadi = kus_tok_idadi - 1;
+            }
+        }
+        kama (kus_tok_idadi > 0) {
+            kus_agizo();
+            kus_anwani = kus_anwani + 1;
+        }
+        i = mwisho + 1;
+    }
+}
+
+// Kusanya chanzo kwenye kumbukumbu ya mashine. Hurudisha idadi ya makosa.
+n32 kusanyiko(n8* chanzo, n64 urefu) {
+    kus_lebo_idadi = 0;
+    kus_makosa = 0;
+    kus_pitia(chanzo, urefu, 1);
+    kama (kus_makosa > 0) { rudisha kus_makosa; }
+    kus_pitia(chanzo, urefu, 2);
+    rudisha kus_makosa;
+}
+
+n8 kus_bafa[65536];
+
+// Soma faili na ulikusanye. -1 ikiwa faili halisomeki.
+n32 kusanyiko_faili(n8* njia) {
+    n64 n = faili_soma_yote(njia, kus_bafa, 65535);
+    kama (n < 0) {
+        andika("kosa: faili halisomeki '%s'\n", njia);
+        rudisha -1;
+    }
+    rudisha kusanyiko(kus_bafa, n);
+}

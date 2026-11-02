@@ -1,0 +1,9 @@
+; factorial.mz -- 10! kwenye Mizani
+        WEKA    R1, 10          ; n
+        WEKA    R2, 1           ; jumla
+kitanzi:
+        ZIDISHA R2, R2, R1
+        ONGEZAI R1, R1, -1
+        TAWI    R1, mwisho, mwisho, kitanzi   ; hasi / sifuri / chanya
+mwisho: CHAPA   R2
+        SIMAMA
