@@ -1,0 +1,172 @@
+// mizani.swa -- ternary iliyosawazishwa (balanced ternary) kwa Swa.
+//
+// Trit ni -1, 0 au +1. Neno ni trits 27 (t0 ndiyo ya chini):
+//
+//     thamani = t0*3^0 + t1*3^1 + ... + t26*3^26
+//
+// hivyo neno linashika namba kamili yoyote katika
+// [-(3^27-1)/2, +(3^27-1)/2] = [-3812798742493, +3812798742493],
+// bila biti ya ishara: hasi ni ishara zote za trits zimegeuzwa.
+//
+// Uhifadhi: maski mbili za biti 27. Biti i ya `p` ni 1 ikiwa trit i
+// ni +1; biti i ya `n` ni 1 ikiwa trit i ni -1; zote 0 ni trit 0.
+// (p & n) == 0 daima. Kwa uhifadhi huu kila operesheni ya trit
+// inafanywa kwa trits zote 27 pamoja, kwa & | ^ ~ << >> pekee --
+// hakuna hesabu ya binary inayojificha ndani ya ongeza/zidisha.
+//
+// Hesabu ni ya modulo 3^27: kupita mpaka kunazunguka, kama vifaa
+// halisi vya ternary (Setun) vingefanya.
+
+muundo Neno {
+    n64 p;
+    n64 n;
+};
+
+n64 MIZANI_MASKI = 134217727;        // biti 27: (1 << 27) - 1
+n32 MIZANI_TRITS = 27;
+n64 MIZANI_KIKOMO = 3812798742493;   // (3^27 - 1) / 2
+
+Neno mizani_neno(n64 p, n64 n) {
+    Neno r;
+    r.p = p & MIZANI_MASKI;
+    r.n = n & MIZANI_MASKI;
+    rudisha r;
+}
+
+Neno mizani_sifuri() {
+    rudisha mizani_neno(0, 0);
+}
+
+// trit i ya neno: -1, 0 au +1
+n32 mizani_trit(Neno a, n32 i) {
+    n64 biti = 1 << i;
+    kama ((a.p & biti) != 0) { rudisha 1; }
+    kama ((a.n & biti) != 0) { rudisha -1; }
+    rudisha 0;
+}
+
+// Namba kamili -> neno. Thamani nje ya mpaka huzungushwa (modulo 3^27).
+Neno mizani_kutoka(n64 x) {
+    n64 p = 0;
+    n64 n = 0;
+    n32 i = 0;
+    wakati (x != 0 && i < MIZANI_TRITS) {
+        n64 r = ((x % 3) + 3) % 3;
+        kama (r == 1) {
+            p = p | (1 << i);
+            x = (x - 1) / 3;
+        } sivyo {
+            kama (r == 2) {
+                n = n | (1 << i);
+                x = (x + 1) / 3;
+            } sivyo {
+                x = x / 3;
+            }
+        }
+        i = i + 1;
+    }
+    rudisha mizani_neno(p, n);
+}
+
+// Neno -> namba kamili (inatosha kwenye n64: |thamani| < 2^42).
+n64 mizani_kwa_namba(Neno a) {
+    n64 v = 0;
+    n32 i = MIZANI_TRITS - 1;
+    wakati (i >= 0) {
+        v = v * 3 + mizani_trit(a, i);
+        i = i - 1;
+    }
+    rudisha v;
+}
+
+// Kinyume (NOT ya ternary, na hasi ya hesabu): badilisha p na n.
+Neno mizani_kinyume(Neno a) {
+    rudisha mizani_neno(a.n, a.p);
+}
+
+// Jumla: kijumlishi cha trits zote 27 kwa pamoja. Kwa kila nafasi,
+// v = a_i + b_i iko katika {-2..2}:
+//   v =  2 -> trit -1, beba +1      v = -2 -> trit +1, beba -1
+//   v =  1 -> trit +1               v = -1 -> trit -1
+//   v =  0 -> trit  0
+// Mabeba yanasogezwa nafasi moja juu na kujumlishwa tena, mpaka
+// hakuna beba (upeo mara 27). Beba kutoka trit 26 hutupwa (modulo 3^27).
+Neno mizani_ongeza(Neno a, Neno b) {
+    n64 ap = a.p;
+    n64 an = a.n;
+    n64 bp = b.p;
+    n64 bn = b.n;
+    n32 hatua = 0;
+    wakati ((bp | bn) != 0 && hatua <= MIZANI_TRITS) {
+        n64 a_sifuri = ~(ap | an) & MIZANI_MASKI;
+        n64 b_sifuri = ~(bp | bn) & MIZANI_MASKI;
+        n64 mbili = ap & bp;
+        n64 hasi_mbili = an & bn;
+        n64 moja = (ap & b_sifuri) | (bp & a_sifuri);
+        n64 hasi_moja = (an & b_sifuri) | (bn & a_sifuri);
+        ap = moja | hasi_mbili;
+        an = hasi_moja | mbili;
+        bp = (mbili << 1) & MIZANI_MASKI;
+        bn = (hasi_mbili << 1) & MIZANI_MASKI;
+        hatua = hatua + 1;
+    }
+    rudisha mizani_neno(ap, an);
+}
+
+Neno mizani_toa(Neno a, Neno b) {
+    rudisha mizani_ongeza(a, mizani_kinyume(b));
+}
+
+// Sogeza trits k juu (zidisha kwa 3^k); trits zinazovuka 26 hutupwa.
+Neno mizani_sogeza(Neno a, n32 k) {
+    rudisha mizani_neno(a.p << k, a.n << k);
+}
+
+// Zidisha: kwa kila trit ya b, ongeza (au toa) a iliyosogezwa.
+Neno mizani_zidisha(Neno a, Neno b) {
+    Neno r = mizani_sifuri();
+    n32 i = 0;
+    wakati (i < MIZANI_TRITS) {
+        n32 t = mizani_trit(b, i);
+        kama (t == 1) { r = mizani_ongeza(r, mizani_sogeza(a, i)); }
+        kama (t == -1) { r = mizani_toa(r, mizani_sogeza(a, i)); }
+        i = i + 1;
+    }
+    rudisha r;
+}
+
+// Ishara: trit ya juu kabisa isiyo sifuri ndiyo ishara ya neno zima.
+n32 mizani_ishara(Neno a) {
+    n32 i = MIZANI_TRITS - 1;
+    wakati (i >= 0) {
+        n32 t = mizani_trit(a, i);
+        kama (t != 0) { rudisha t; }
+        i = i - 1;
+    }
+    rudisha 0;
+}
+
+// Linganisha: -1 (a < b), 0 (sawa), +1 (a > b). Hakuna mzunguko:
+// ulinganisho unafanywa trit kwa trit kutoka juu, si kwa a - b.
+n32 mizani_linganisha(Neno a, Neno b) {
+    n32 i = MIZANI_TRITS - 1;
+    wakati (i >= 0) {
+        n32 ta = mizani_trit(a, i);
+        n32 tb = mizani_trit(b, i);
+        kama (ta > tb) { rudisha 1; }
+        kama (ta < tb) { rudisha -1; }
+        i = i - 1;
+    }
+    rudisha 0;
+}
+
+// Mantiki ya Kleene ya thamani tatu (-1 si kweli, 0 haijulikani,
+// +1 kweli), kwa trits zote 27 pamoja:
+//   NA = kiwango cha chini (min), AU = kiwango cha juu (max).
+Neno mizani_na(Neno a, Neno b) {
+    rudisha mizani_neno(a.p & b.p, a.n | b.n);
+}
+
+Neno mizani_au(Neno a, Neno b) {
+    rudisha mizani_neno(a.p | b.p, a.n & b.n);
+}
