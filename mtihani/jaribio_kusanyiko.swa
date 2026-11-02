@@ -1,0 +1,56 @@
+// jaribio_kusanyiko.swa -- kusanyiko la Kiswahili: mifano halisi
+// inakusanywa kutoka faili na kuendeshwa, na makosa yanakamatwa.
+husisha { msingi/maktaba/kumbukumbu.swa }
+husisha { msingi/maktaba/mfuatano.swa }
+husisha { msingi/maktaba/faili.swa }
+husisha { msingi/kusanyiko.swa }
+
+n32 makosa = 0;
+
+w0 tarajia(n64 halisi, n64 tarajiwa, n8* jina) {
+    kama (halisi != tarajiwa) {
+        makosa = makosa + 1;
+        andika("KOSA %s: %d badala ya %d\n", jina, halisi, tarajiwa);
+    }
+}
+
+// Kusanya na endesha faili; rudisha thamani ya rejista r.
+n64 endesha(n8* njia, n64 r) {
+    mashine_anzisha();
+    n32 k = kusanyiko_faili(njia);
+    tarajia(k, 0, njia);
+    tarajia(mashine_endesha(100000), 0, njia);
+    rudisha mashine_thamani(r);
+}
+
+n32 main() {
+    tarajia(endesha("mifano/factorial.mz", 2), 3628800, "factorial.mz R2");
+    tarajia(endesha("mifano/fibonacci.mz", 1), 832040, "fibonacci.mz R1");
+    tarajia(endesha("mifano/mraba.mz", 2), 144, "mraba.mz R2");
+    tarajia(endesha("mifano/jumla.mz", 1), 11, "jumla.mz R1");
+
+    // Makosa: faili lenye makosa 4 tofauti -- kosa MOJA kwa kila moja.
+    mashine_anzisha();
+    tarajia(kusanyiko_faili("mtihani/kusanyiko/makosa.mz"), 4, "makosa.mz (makosa 4)");
+
+    // Lebo haijulikani hukaguliwa kwenye pitio la pili.
+    n8 lebo[128];
+    n64 q = 0;
+    bafa_mfuatano(lebo, 128, &q, "        RUKA hakuna\n");
+    mashine_anzisha();
+    tarajia(kusanyiko(lebo, q), 1, "lebo haijulikani (kosa 1)");
+
+    // Tawi la mbali: lebo zaidi ya 364 mbele lazima ikataliwe.
+    n8 mbali[8192];
+    n64 p = 0;
+    bafa_mfuatano(mbali, 8192, &p, "        TAWI R1, mbele, mbele, mbele\n");
+    n32 i = 0;
+    wakati (i < 400) { bafa_mfuatano(mbali, 8192, &p, "        SIMAMA\n"); i = i + 1; }
+    bafa_mfuatano(mbali, 8192, &p, "mbele:  SIMAMA\n");
+    mashine_anzisha();
+    tarajia(kusanyiko(mbali, p), 3, "tawi la mbali (makosa 3)");
+
+    andika("kusanyiko: makosa %d\n", makosa);
+    kama (makosa > 255) { rudisha 255; }
+    rudisha makosa;
+}
