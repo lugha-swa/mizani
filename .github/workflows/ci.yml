@@ -1,0 +1,31 @@
+name: Majaribio
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  mizani:
+    name: Mizani
+    runs-on: ubuntu-latest
+    env:
+      TOLEO_LA_SWA: v0.0.1
+    steps:
+      - name: Pakua msimbo
+        uses: actions/checkout@v4
+
+      # Swa iliyotolewa, si ya kujengwa hapa: Mizani inajaribiwa dhidi ya
+      # toleo ambalo watumiaji wanalo kweli.
+      - name: Pakua Swa
+        run: |
+          D="swa-$TOLEO_LA_SWA-linux-x86_64"
+          curl -fsSLO "https://github.com/lugha-swa/swa/releases/download/$TOLEO_LA_SWA/$D.tar.gz"
+          curl -fsSLO "https://github.com/lugha-swa/swa/releases/download/$TOLEO_LA_SWA/SHA256SUMS"
+          grep " $D.tar.gz\$" SHA256SUMS | sha256sum -c -
+          tar -xzf "$D.tar.gz" -C "$RUNNER_TEMP"
+          echo "SWA=$RUNNER_TEMP/$D/bin/swa" >> "$GITHUB_ENV"
+
+      - name: Majaribio
+        run: ./jaribu.sh

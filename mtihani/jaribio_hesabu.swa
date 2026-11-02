@@ -1,0 +1,125 @@
+// jaribio_hesabu.swa -- kila operesheni ya mizani.swa inalinganishwa
+// na hesabu ya kawaida ya namba kamili (oracle), ikiwemo kuzunguka kwa
+// modulo 3^27. Msimbo wa kutoka = idadi ya makosa (0 = yote sawa).
+husisha { msingi/maktaba/kumbukumbu.swa }
+husisha { msingi/mizani.swa }
+
+n64 M3_27 = 7625597484987;   // 3^27
+n32 makosa = 0;
+n32 ukaguzi = 0;
+n64 mbegu_lcg = 12345;
+
+// Oracle ya kuzunguka: weka v kwenye [-KIKOMO, KIKOMO] modulo 3^27.
+n64 zungusha(n64 v) {
+    n64 r = (v + MIZANI_KIKOMO) % M3_27;
+    kama (r < 0) { r = r + M3_27; }
+    rudisha r - MIZANI_KIKOMO;
+}
+
+// Namba ya nasibu inayozalika upya (LCG), katika [-kikomo, kikomo].
+n64 nasibu(n64 kikomo) {
+    mbegu_lcg = (mbegu_lcg * 6364136223846793005 + 1442695040888963407);
+    n64 x = (mbegu_lcg >> 17) & 4398046511103;   // biti 42
+    rudisha (x % (2 * kikomo + 1)) - kikomo;
+}
+
+w0 kagua(n64 halisi, n64 tarajiwa, n8* jina, n64 x, n64 y) {
+    ukaguzi = ukaguzi + 1;
+    kama (halisi != tarajiwa) {
+        makosa = makosa + 1;
+        kama (makosa <= 10) {
+            andika("KOSA %s(%d, %d): %d badala ya %d\n", jina, x, y, halisi, tarajiwa);
+        }
+    }
+}
+
+w0 kagua_jozi(n64 x, n64 y) {
+    Neno a = mizani_kutoka(x);
+    Neno b = mizani_kutoka(y);
+    kagua(mizani_kwa_namba(mizani_ongeza(a, b)), zungusha(x + y), "ongeza", x, y);
+    kagua(mizani_kwa_namba(mizani_toa(a, b)), zungusha(x - y), "toa", x, y);
+    n64 ishara = 0;
+    kama (x < y) { ishara = -1; }
+    kama (x > y) { ishara = 1; }
+    kagua(mizani_linganisha(a, b), ishara, "linganisha", x, y);
+}
+
+n32 main() {
+    // 1. Ubadilishaji: kila namba katika [-3000, 3000] na mipaka yenyewe
+    n64 x = -3000;
+    wakati (x <= 3000) {
+        kagua(mizani_kwa_namba(mizani_kutoka(x)), x, "kutoka", x, 0);
+        x = x + 1;
+    }
+    kagua(mizani_kwa_namba(mizani_kutoka(MIZANI_KIKOMO)), MIZANI_KIKOMO, "kutoka", MIZANI_KIKOMO, 0);
+    kagua(mizani_kwa_namba(mizani_kutoka(0 - MIZANI_KIKOMO)), 0 - MIZANI_KIKOMO, "kutoka", 0 - MIZANI_KIKOMO, 0);
+    kagua(mizani_kwa_namba(mizani_kutoka(MIZANI_KIKOMO + 1)), 0 - MIZANI_KIKOMO, "kutoka", MIZANI_KIKOMO + 1, 0);
+
+    // 2. Jumla, tofauti, linganisha: gridi kamili [-60, 60]^2
+    x = -60;
+    wakati (x <= 60) {
+        n64 y = -60;
+        wakati (y <= 60) {
+            kagua_jozi(x, y);
+            y = y + 1;
+        }
+        x = x + 1;
+    }
+
+    // 3. Jozi za nasibu katika neno zima (pamoja na kuzunguka)
+    n32 k = 0;
+    wakati (k < 20000) {
+        kagua_jozi(nasibu(MIZANI_KIKOMO), nasibu(MIZANI_KIKOMO));
+        k = k + 1;
+    }
+    kagua(mizani_kwa_namba(mizani_ongeza(mizani_kutoka(MIZANI_KIKOMO), mizani_kutoka(1))), 0 - MIZANI_KIKOMO, "ongeza", MIZANI_KIKOMO, 1);
+
+    // 4. Zidisha: gridi [-40, 40]^2 na nasibu hadi 10^9 (zao < 2^63)
+    x = -40;
+    wakati (x <= 40) {
+        n64 y = -40;
+        wakati (y <= 40) {
+            kagua(mizani_kwa_namba(mizani_zidisha(mizani_kutoka(x), mizani_kutoka(y))), x * y, "zidisha", x, y);
+            y = y + 1;
+        }
+        x = x + 1;
+    }
+    k = 0;
+    wakati (k < 5000) {
+        n64 p = nasibu(1000000000);
+        n64 q = nasibu(1000000000);
+        kagua(mizani_kwa_namba(mizani_zidisha(mizani_kutoka(p), mizani_kutoka(q))), zungusha(p * q), "zidisha", p, q);
+        k = k + 1;
+    }
+
+    // 5. Mantiki ya Kleene: kila trit ni min (NA) / max (AU) / kinyume
+    k = 0;
+    wakati (k < 2000) {
+        Neno a = mizani_kutoka(nasibu(MIZANI_KIKOMO));
+        Neno b = mizani_kutoka(nasibu(MIZANI_KIKOMO));
+        Neno na = mizani_na(a, b);
+        Neno au = mizani_au(a, b);
+        Neno si = mizani_kinyume(a);
+        n32 i = 0;
+        wakati (i < MIZANI_TRITS) {
+            n32 ta = mizani_trit(a, i);
+            n32 tb = mizani_trit(b, i);
+            n32 chini = ta;
+            n32 juu = tb;
+            kama (tb < ta) { chini = tb; juu = ta; }
+            kagua(mizani_trit(na, i), chini, "na", ta, tb);
+            kagua(mizani_trit(au, i), juu, "au", ta, tb);
+            kagua(mizani_trit(si, i), 0 - ta, "kinyume", ta, 0);
+            i = i + 1;
+        }
+        kama ((na.p & na.n) != 0 || (au.p & au.n) != 0) {
+            makosa = makosa + 1;
+            andika("KOSA: trit yenye +1 na -1 kwa wakati mmoja\n");
+        }
+        k = k + 1;
+    }
+
+    andika("mizani: ukaguzi %d, makosa %d\n", ukaguzi, makosa);
+    kama (makosa > 255) { rudisha 255; }
+    rudisha makosa;
+}
