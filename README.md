@@ -46,8 +46,11 @@ Maagizo 19: `SIMAMA`, `WEKA`, `ONGEZA`, `TOA`, `ZIDISHA`, `KINYUME`, `NA`, `AU`,
 ## Majaribio
 
 ```sh
-SWA=/njia/ya/swa ./jaribu.sh
+swa --exe jaribu.swa > jaribu && chmod +x jaribu
+./jaribu /njia/kamili/ya/swa
 ```
+
+Mkimbiaji (`jaribu.swa`) ni Swa pia: hukusanya kila jaribio, huliendesha chini ya kikomo cha muda kwa `fork`/`execve`/`wait4`, na hukagua msimbo wa kutoka. Mizani yote -- maktaba, mashine, majaribio na mkimbiaji -- ni Swa safi.
 
 `mtihani/jaribio_hesabu.swa` hulinganisha kila operesheni na hesabu ya kawaida ya namba kamili: ubadilishaji wa kila namba katika [-3000, 3000] na mipaka yenyewe, gridi kamili ya jumla/tofauti/ulinganisho [-60, 60]², jozi 20,000 za nasibu katika neno zima (pamoja na kuzunguka), zidisha kwenye gridi na jozi 5,000 hadi 10^9, na mantiki ya Kleene trit kwa trit -- **ukaguzi 283,489**. CI inatumia Swa iliyotolewa ([v0.0.1](https://github.com/lugha-swa/swa/releases/tag/v0.0.1)), si ya kujengwa.
 

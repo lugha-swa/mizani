@@ -27,5 +27,9 @@ jobs:
           tar -xzf "$D.tar.gz" -C "$RUNNER_TEMP"
           echo "SWA=$RUNNER_TEMP/$D/bin/swa" >> "$GITHUB_ENV"
 
+      # Mkimbiaji wa majaribio ni wa Swa pia (jaribu.swa): fork/execve/wait4.
       - name: Majaribio
-        run: ./jaribu.sh
+        run: |
+          "$SWA" --exe jaribu.swa > jaribu
+          chmod +x jaribu
+          ./jaribu "$SWA"

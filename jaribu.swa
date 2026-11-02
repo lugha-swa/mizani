@@ -1,0 +1,111 @@
+// jaribu.swa -- mkimbiaji wa majaribio ya Mizani, kwa Swa (hakuna bash).
+//
+//   swa --exe jaribu.swa > jaribu && chmod +x jaribu
+//   ./jaribu /njia/kamili/ya/swa
+//
+// Kwa kila jaribio: kusanya kwa `swa --exe` (stdout kwenda faili),
+// fanya faili litekelezeke (chmod), liendeshe chini ya kikomo cha muda
+// (mlinzi huua mtoto akipitisha sekunde 120), na ukague msimbo wa
+// kutoka == 0. fork/execve/wait4 ni za maktaba ya Swa (kumbukumbu.swa).
+husisha { msingi/maktaba/kumbukumbu.swa }
+husisha { msingi/maktaba/mfuatano.swa }
+husisha { msingi/maktaba/faili.swa }
+
+n64 KIKOMO_SEKUNDE = 120;
+
+// argv ya mzazi inafuatwa moja kwa moja na envp (mkataba wa kernel).
+n8** pata_envp(n8** argv) {
+    n64 i = 0;
+    wakati (argv[i] != 0) { i = i + 1; }
+    rudisha argv + (i + 1);
+}
+
+// Ndani ya mtoto, kabla ya execve: elekeza fd (1 au 2) kwenye faili.
+w0 elekeza(n64 fd, n8* njia) {
+    n8* f = faili_fungua(njia, "w");
+    kama (f == 0) { rudisha; }
+    n32 fd_faili = kishikio_kutoka_hoja(f);
+    wito_wa_mfumo(33, fd_faili, fd, 0, 0, 0, 0);     // dup2
+    sys_funga(fd_faili);
+}
+
+// Kusanya `chanzo` kwenda `binary`; makosa ya mkusanyaji kwenda `makosa`.
+n32 kusanya(n8* swa, n8* chanzo, n8* binary, n8* makosa, n8** envp) {
+    n8** v = tenga(32);
+    v[0] = swa; v[1] = "--exe"; v[2] = chanzo; v[3] = 0;
+    n64 mtoto = sys_fork();
+    kama (mtoto == 0) {
+        elekeza(1, binary);
+        elekeza(2, makosa);
+        sys_execve(swa, v, envp);
+        wito_wa_mfumo(60, 127, 0, 0, 0, 0, 0);
+    }
+    n32 hali_ya_mtoto = 0;
+    sys_wait4(mtoto, &hali_ya_mtoto, 0);
+    rudisha sys_wait4_msimbo_wa_kutoka(hali_ya_mtoto);
+}
+
+// Endesha `binary` chini ya kikomo cha muda. -1 ikiwa iliuawa.
+n32 endesha(n8* binary, n8** envp) {
+    n8** v = tenga(16);
+    v[0] = binary; v[1] = 0;
+    n64 mtoto = sys_fork();
+    kama (mtoto == 0) {
+        sys_execve(binary, v, envp);
+        wito_wa_mfumo(60, 127, 0, 0, 0, 0, 0);
+    }
+    n64 mlinzi = sys_fork();
+    kama (mlinzi == 0) {
+        sys_nanosleep_sekunde(KIKOMO_SEKUNDE);
+        sys_kill(mtoto, 9);
+        wito_wa_mfumo(60, 0, 0, 0, 0, 0, 0);
+    }
+    n32 hali_ya_mtoto = 0;
+    sys_wait4(mtoto, &hali_ya_mtoto, 0);
+    sys_kill(mlinzi, 9);
+    n32 hali_ya_mlinzi = 0;
+    sys_wait4(mlinzi, &hali_ya_mlinzi, 0);
+    kama (sys_wait4_ulitoka_kwa_kawaida(hali_ya_mtoto) == 0) { rudisha -1; }
+    rudisha sys_wait4_msimbo_wa_kutoka(hali_ya_mtoto);
+}
+
+n32 yamefaulu = 0;
+n32 yameshindwa = 0;
+
+w0 jaribu(n8* swa, n8* jina, n8** envp) {
+    n8 chanzo[256];
+    n8 binary[256];
+    n8 makosa[256];
+    unganisha_mfuatano(chanzo, "mtihani/", jina);
+    unganisha_mfuatano(chanzo, chanzo, ".swa");
+    unganisha_mfuatano(binary, "mtihani/.jenga/", jina);
+    unganisha_mfuatano(makosa, binary, ".makosa");
+    kama (kusanya(swa, chanzo, binary, makosa, envp) != 0) {
+        andika("SHINDWA: kukusanya %s (angalia %s)\n", chanzo, makosa);
+        yameshindwa = yameshindwa + 1;
+        rudisha;
+    }
+    wito_wa_mfumo(90, binary, 493, 0, 0, 0, 0);       // chmod 0755
+    n32 toka = endesha(binary, envp);
+    kama (toka == 0) {
+        yamefaulu = yamefaulu + 1;
+    } sivyo {
+        kama (toka < 0) { andika("SHINDWA: %s (muda umekwisha)\n", chanzo); }
+        sivyo { andika("SHINDWA: %s (kutoka %d)\n", chanzo, toka); }
+        yameshindwa = yameshindwa + 1;
+    }
+}
+
+n32 main(n32 argc, n8** argv) {
+    kama (argc < 2) {
+        andika("matumizi: ./jaribu /njia/kamili/ya/swa\n");
+        rudisha 2;
+    }
+    n8** envp = pata_envp(argv);
+    sys_mkdir("mtihani/.jenga", 493);
+    jaribu(argv[1], "jaribio_hesabu", envp);
+    jaribu(argv[1], "jaribio_mashine", envp);
+    andika("===== Matokeo ya mizani: %d yamefaulu, %d yameshindwa =====\n", yamefaulu, yameshindwa);
+    kama (yameshindwa > 0) { rudisha 1; }
+    rudisha 0;
+}
