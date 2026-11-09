@@ -1,0 +1,12 @@
+; fibonacci.mz -- fib(30) kwenye Mizani: R1, R2 = R2, R1 + R2 mara 30
+        WEKA    R1, 0
+        WEKA    R2, 1
+        WEKA    R3, 30          ; hesabu ya mizunguko
+kitanzi:
+        ONGEZA  R4, R1, R2
+        ONGEZA  R1, R2, R0      ; R0 ni sifuri daima: nakili
+        ONGEZA  R2, R4, R0
+        ONGEZAI R3, R3, -1
+        TAWI    R3, mwisho, mwisho, kitanzi
+mwisho: CHAPA   R1              ; 832040
+        SIMAMA

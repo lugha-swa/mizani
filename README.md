@@ -43,6 +43,36 @@ Maagizo 19: `SIMAMA`, `WEKA`, `ONGEZA`, `TOA`, `ZIDISHA`, `KINYUME`, `NA`, `AU`,
 
 `mtihani/jaribio_mashine.swa` huendesha programu halisi kwenye mashine: 10! = 3,628,800, fib(30) = 832,040, jumla kutoka kumbukumbu, ITA/RUDI, tawi kwa kila ishara, kusogeza na mantiki, usimbaji wa kila sehemu kwa mipaka yote, na makosa (anwani nje, opcode isiyojulikana, kitanzi kisichoisha).
 
+## Awamu 3: kusanyiko la Kiswahili
+
+Programu za Mizani zinaandikwa kama maandishi, kwa maagizo ya Kiswahili, na `msingi/kusanyiko.swa` huzikusanya kwenda maneno ya trits 27. `mizani.swa` ni zana ya kukusanya na kuendesha:
+
+```sh
+swa --exe mizani.swa > mizani && chmod +x mizani
+./mizani mifano/factorial.mz        # 3628800
+```
+
+```
+; factorial.mz -- 10! kwenye Mizani
+        WEKA    R1, 10          ; n
+        WEKA    R2, 1           ; jumla
+kitanzi:
+        ZIDISHA R2, R2, R1
+        ONGEZAI R1, R1, -1
+        TAWI    R1, mwisho, mwisho, kitanzi   ; hasi / sifuri / chanya
+mwisho: CHAPA   R2
+        SIMAMA
+```
+
+Lebo zinaweza kutumika kabla ya kufafanuliwa (mapitio mawili). `TAWI` huchukua lebo tatu -- moja kwa kila ishara -- na kuzigeuza kuwa umbali wa trits 6. `NENO` huweka data. Makosa yanaripotiwa kwa Kiswahili, kosa moja kwa kila tatizo, na namba ya mstari:
+
+```
+kosa, mstari 2: agizo halijulikani 'RUKIA'
+kosa, mstari 3: rejista si sahihi (R-4..R4) 'R5'
+```
+
+Mifano: `factorial.mz` (10!), `fibonacci.mz` (fib(30)), `mraba.mz` (ITA/RUDI), `jumla.mz` (data na kumbukumbu).
+
 ## Majaribio
 
 ```sh
@@ -56,7 +86,6 @@ Mkimbiaji (`jaribu.swa`) ni Swa pia: hukusanya kila jaribio, huliendesha chini y
 
 ## Inayofuata
 
-3. Assembler kwa Swa
 4. Kivinjari (WASM): Mizani mtandaoni
 5. `swa --mizani`: Swa ikikusanya kwenda ternary
 

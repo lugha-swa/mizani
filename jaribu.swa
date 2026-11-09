@@ -105,6 +105,7 @@ n32 main(n32 argc, n8** argv) {
     sys_mkdir("mtihani/.jenga", 493);
     jaribu(argv[1], "jaribio_hesabu", envp);
     jaribu(argv[1], "jaribio_mashine", envp);
+    jaribu(argv[1], "jaribio_kusanyiko", envp);
     andika("===== Matokeo ya mizani: %d yamefaulu, %d yameshindwa =====\n", yamefaulu, yameshindwa);
     kama (yameshindwa > 0) { rudisha 1; }
     rudisha 0;

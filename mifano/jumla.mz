@@ -1,0 +1,19 @@
+; jumla.mz -- data (NENO) kwenye kumbukumbu, kitanzi cha kupakia na kujumlisha
+        WEKA    R1, 0           ; jumla
+        WEKA    R2, data        ; anwani ya kipengele cha kwanza
+        WEKA    R3, 6           ; idadi
+kitanzi:
+        PAKIA   R4, R2, 0
+        ONGEZA  R1, R1, R4
+        ONGEZAI R2, R2, 1
+        ONGEZAI R3, R3, -1
+        TAWI    R3, mwisho, mwisho, kitanzi
+mwisho: CHAPA   R1              ; 3 - 1 + 4 + 1 - 5 + 9 = 11
+        SIMAMA
+
+data:   NENO    3
+        NENO    -1
+        NENO    4
+        NENO    1
+        NENO    -5
+        NENO    9

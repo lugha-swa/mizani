@@ -1,0 +1,8 @@
+; mraba.mz -- ITA na RUDI: kazi ya mraba, kiungo kwenye R-1
+        WEKA    R1, -12
+        ITA     R-1, mraba
+        CHAPA   R2              ; 144
+        SIMAMA
+
+mraba:  ZIDISHA R2, R1, R1
+        RUDI    R-1

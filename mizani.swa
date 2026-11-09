@@ -1,0 +1,26 @@
+// mizani.swa -- kusanya na kuendesha programu ya kusanyiko ya Mizani.
+//
+//   swa --exe mizani.swa > mizani && chmod +x mizani
+//   ./mizani mifano/factorial.mz
+//
+// Msimbo wa kutoka: 0 programu ilisimama vizuri; 1 makosa ya
+// kusanyiko; 2 kosa la mashine (anwani nje, opcode, kikomo cha hatua).
+husisha { msingi/maktaba/kumbukumbu.swa }
+husisha { msingi/maktaba/mfuatano.swa }
+husisha { msingi/maktaba/faili.swa }
+husisha { msingi/kusanyiko.swa }
+
+n32 main(n32 argc, n8** argv) {
+    kama (argc < 2) {
+        andika("matumizi: mizani programu.mz\n");
+        rudisha 1;
+    }
+    mashine_anzisha();
+    kama (kusanyiko_faili(argv[1]) != 0) { rudisha 1; }
+    n32 kosa = mashine_endesha(100000000);
+    kama (kosa == 1) { andika("kosa la mashine: anwani nje ya kumbukumbu (pc=%d)\n", mashine_pc); }
+    kama (kosa == 2) { andika("kosa la mashine: agizo halijulikani (pc=%d)\n", mashine_pc); }
+    kama (kosa == 3) { andika("kosa la mashine: hatua zimezidi kikomo\n"); }
+    kama (kosa != 0) { rudisha 2; }
+    rudisha 0;
+}
